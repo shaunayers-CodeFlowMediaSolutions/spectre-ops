@@ -1,42 +1,23 @@
-// Incremented version to v2 to force cache update for the "Add Button" fix
-const CACHE_NAME = 'spectre-v2';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  'https://img.icons8.com/ios-filled/192/ff9500/security-configuration.png',
-  'https://img.icons8.com/ios-filled/512/ff9500/security-configuration.png'
-];
-
-// Install Service Worker and Cache Assets
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
-  );
-  // Force the waiting service worker to become the active service worker
-  self.skipWaiting();
-});
-
-// Activate and Clean Up Old Caches
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      );
-    })
-  );
-  // Ensure the new service worker takes control of the page immediately
-  self.clients.claim();
-});
-
-// Fetch Assets from Cache first, then Network
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
-  );
-});
+{
+"name": "SPECTRE VIS-OPS",
+"short_name": "SPECTRE",
+"description": "Tactical Field Interface for Loyal Serpent 8",
+"start_url": "./index.html",
+"display": "standalone",
+"background_color": "#0f1113",
+"theme_color": "#ff9500",
+"orientation": "portrait",
+"icons": [
+{
+"src": "https://www.google.com/search?q=https://img.icons8.com/ios-filled/192/ff9500/security-configuration.png",
+"sizes": "192x192",
+"type": "image/png",
+"purpose": "any maskable"
+},
+{
+"src": "https://www.google.com/search?q=https://img.icons8.com/ios-filled/512/ff9500/security-configuration.png",
+"sizes": "512x512",
+"type": "image/png"
+}
+]
+}
