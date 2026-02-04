@@ -7,17 +7,23 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>SPECTRE VIS-OPS</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
     <style>
         :root { 
             --bg: #0f1113; 
             --card: #1c1f23; 
-            --accent: #ff9500; 
+            --accent: #ff9500; /* Spectre Orange */
             --text: #e0e0e0; 
             --dim: #8e8e93; 
             --warning: #ff3b30; 
             --ares: #007aff;
             --success: #34c759;
             --medical: #ff3b30;
+            --header-main: #ffffff; /* High contrast for Main Headers */
+            --grey-btn: #3a3f44;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
@@ -32,14 +38,15 @@
         .cache-warning { 
             background: var(--warning); 
             color: #fff; 
-            padding: 12px; 
-            border-radius: 10px; 
-            font-size: 11px; 
-            font-weight: 900; 
+            padding: 6px 10px; 
+            border-radius: 6px; 
+            font-size: 9px; 
+            font-weight: 700; 
             text-align: center; 
-            margin-bottom: 20px; 
+            margin-bottom: 15px; 
             text-transform: uppercase;
-            border: 2px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.2);
+            letter-spacing: 0.5px;
         }
         
         header { position: relative; }
@@ -69,13 +76,60 @@
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
         }
 
-        .section-label { font-size: 11px; color: var(--dim); text-transform: uppercase; margin: 25px 0 8px 5px; font-weight: 700; letter-spacing: 1.5px; }
+        .section-label { 
+            font-size: 11px; 
+            color: var(--header-main); 
+            text-transform: uppercase; 
+            margin: 25px 0 8px 5px; 
+            font-weight: 900; 
+            letter-spacing: 1.5px; 
+        }
         
         .category-trigger { background: var(--card); border-radius: 14px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); border: 1px solid #333; }
-        .category-trigger summary { padding: 16px; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; list-style: none; color: var(--text); align-items: center; }
+        
+        .category-trigger summary { 
+            padding: 16px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: space-between; 
+            list-style: none; 
+            color: var(--accent); 
+            align-items: center; 
+        }
         .category-trigger summary::after { content: '▼'; font-size: 10px; color: var(--accent); transition: transform 0.2s; }
         .category-trigger[open] summary::after { transform: rotate(180deg); }
         .category-content { border-top: 1px solid #333; }
+
+        .mission-item { 
+            padding: 15px; 
+            border-bottom: 1px solid #333; 
+            position: relative; 
+            transition: background 0.3s ease;
+        }
+        .mission-item:last-child { border-bottom: none; }
+        
+        .mission-play { background: transparent; }
+        .mission-completed { background: rgba(52, 199, 89, 0.15); border-left: 4px solid var(--success); }
+        .mission-failed { background: rgba(255, 59, 48, 0.15); border-left: 4px solid var(--medical); }
+
+        .mission-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        
+        .status-pill { 
+            font-size: 9px; 
+            padding: 3px 6px; 
+            border-radius: 4px; 
+            font-weight: 900; 
+            cursor: pointer;
+            text-transform: uppercase;
+            border: 1px solid transparent;
+        }
+        .status-in-play { background: rgba(255, 149, 0, 0.1); color: var(--accent); border-color: var(--accent); }
+        .status-completed { background: var(--success); color: #000; border-color: var(--success); }
+        .status-failed { background: var(--medical); color: #fff; border-color: var(--medical); }
+        
+        .btn-add-mission { background: #2c2f33; color: var(--accent); border: 1px dashed var(--accent); padding: 10px; width: 100%; border-radius: 8px; font-weight: 800; margin: 10px 0; font-size: 12px; }
+        .mission-delete { color: var(--dim); font-size: 12px; border: none; background: none; padding: 5px; cursor: pointer; }
 
         .card { background: var(--card); border-radius: 14px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); overflow: hidden; border: 1px solid #333; }
         
@@ -110,15 +164,54 @@
         
         .roster-header { display: grid; grid-template-columns: 100px 1fr 50px; font-size: 10px; color: var(--dim); padding: 0 16px; margin-bottom: 4px; font-weight: 800; }
         .roster-row { display: grid; grid-template-columns: 100px 1fr 50px; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #333; align-items: center; }
+        
+        .roster-row.jtf { 
+            display: flex; 
+            gap: 12px; 
+            width: 100%;
+        }
+        .roster-row.jtf .jtf-callsign-wrap {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .roster-row.jtf .jtf-callsign-input {
+            width: auto;
+            flex-shrink: 0;
+            flex-grow: 0;
+            background: transparent;
+            border: none;
+            padding: 0;
+            font-weight: 900;
+            color: var(--accent);
+            text-transform: uppercase;
+            overflow: visible;
+        }
+        .roster-row.jtf .jtf-role-input {
+            flex-grow: 1;
+            min-width: 50px;
+        }
+        .roster-row.jtf .jtf-ch-input {
+            width: 45px;
+            flex-shrink: 0;
+            text-align: center;
+        }
+
         .roster-row b { font-size: 14px; color: var(--accent); }
 
         .check-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #333; }
         .check-row input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--accent); }
 
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; align-items: center; }
         .btn { background: var(--accent); color: #000; border: none; padding: 15px; border-radius: 10px; font-weight: 800; width: 100%; font-size: 14px; cursor: pointer; transition: background 0.2s, color 0.2s; }
-        .btn-sync { background: #333; color: var(--accent); border: 1px solid var(--accent); }
-        .btn.success { background: var(--success) !important; color: #fff !important; border-color: var(--success) !important; }
+        
+        /* Dynamic Sync Button Styles */
+        .btn-sync { background: var(--grey-btn); color: var(--dim); border: 1px solid #444; }
+        .btn-sync.modified { background: var(--accent); color: #000; border-color: var(--accent); }
+        .btn-sync.synced { background: var(--success); color: #000; border-color: var(--success); }
+
+        .sync-info { display: flex; flex-direction: column; gap: 4px; }
+        .sync-timestamp { font-size: 9px; color: var(--dim); font-weight: 800; text-transform: uppercase; }
 
         .modal-overlay {
             display: none;
@@ -147,6 +240,11 @@
         .med-member-block { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 15px; }
         .med-member-block:last-child { border-bottom: none; }
         .med-label { font-size: 10px; color: var(--dim); margin: 8px 0 4px 0; font-weight: 800; text-transform: uppercase; }
+        
+        /* Cloud Status Indicator */
+        #cloud_status { font-size: 9px; color: var(--dim); text-align: right; margin-top: 4px; font-weight: 700; text-transform: uppercase; }
+        .cloud-online { color: var(--success) !important; }
+        .cloud-offline { color: var(--warning) !important; }
     </style>
 </head>
 <body>
@@ -156,6 +254,7 @@
 <header>
     <h1>SPECTRE</h1>
     <div class="squad-name">Loyal Serpent 8 | VIS-OPS & Comms Specialist</div>
+    <div id="cloud_status">Cloud: Checking...</div>
     <button class="med-trigger" onclick="openModal('medical_modal')" title="Emergency Med Info">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
     </button>
@@ -165,7 +264,10 @@
 <details class="category-trigger" open>
     <summary>Mission Intelligence</summary>
     <div class="category-content">
-        <textarea id="intel" class="save" rows="5" placeholder="Enter commander orders or mission intelligence here..." style="border:none; border-radius:0;"></textarea>
+        <div id="mission_container"></div>
+        <div style="padding: 0 15px 15px 15px;">
+            <button class="btn-add-mission" onclick="addMission()">+ ADD NEW OBJECTIVE</button>
+        </div>
     </div>
 </details>
 
@@ -203,7 +305,18 @@
             <div class="roster-row"><b>Danger</b><input type="text" id="r5" class="save" value="Rifleman"> <input type="text" id="n5" class="save" value="05"></div>
             <div class="roster-row"><b>Coldsmoke</b><input type="text" id="r6" class="save" value="Rifleman / LMG"> <input type="text" id="n6" class="save" value="06"></div>
             <div class="roster-row"><b>FOX</b><input type="text" id="r7" class="save" value="COMCAM / VIS / Drone"> <input type="text" id="n7" class="save" value="07"></div>
-            <div class="roster-row"><b>3CHO</b><input type="text" id="r8" class="save" value="Rifleman / Medic"> <input type="text" id="n8" class="save" value="08"></div>
+        </div>
+    </div>
+</details>
+
+<div class="section-label">🤝 Joint Task Force (JTF)</div>
+<details class="category-trigger" open>
+    <summary>JTF / Guest Roster</summary>
+    <div class="category-content">
+        <div class="roster-header"><span>CALLSIGN</span><span>ROLE(S)</span><span>CH#</span></div>
+        <div id="jtf_roster"></div>
+        <div style="padding: 0 15px 15px 15px;">
+            <button class="btn-add-mission" onclick="addJTFMember()">+ ADD JTF PERSONNEL</button>
         </div>
     </div>
 </details>
@@ -253,32 +366,16 @@
     </div>
 </details>
 
-<div class="section-label">📦 Deployment Logistics</div>
-<details class="category-trigger">
-    <summary>Pre-Trip Packing</summary>
-    <div class="category-content">
-        <div class="check-row"><span>Primary Marker / Backup</span><input type="checkbox" id="pt1" class="save-check"></div>
-        <div class="check-row"><span>Batteries (AA, AAA, CR123A)</span><input type="checkbox" id="pt2" class="save-check"></div>
-        <div class="check-row"><span>Comms Gear (Headset/PTT/Radio)</span><input type="checkbox" id="pt3" class="save-check"></div>
-        <div class="check-row"><span>Uniforms (Day & Night Camo)</span><input type="checkbox" id="pt4" class="save-check"></div>
-        <div class="check-row"><span>First Aid Kit / Meds</span><input type="checkbox" id="pt5" class="save-check"></div>
-    </div>
-</details>
-
-<details class="category-trigger">
-    <summary>Camping & Food</summary>
-    <div class="category-content">
-        <div class="check-row"><span>Tent / Sleeping Bag / Pad</span><input type="checkbox" id="cf1" class="save-check"></div>
-        <div class="check-row"><span>Stove & Fuel</span><input type="checkbox" id="cf2" class="save-check"></div>
-        <div class="check-row"><span>Water (Minimum 4L / Day)</span><input type="checkbox" id="cf3" class="save-check"></div>
-        <div class="check-row"><span>Meals (MREs / High Calorie)</span><input type="checkbox" id="cf4" class="save-check"></div>
-        <div class="check-row"><span>Hydration Salts / Electrolytes</span><input type="checkbox" id="cf5" class="save-check"></div>
-    </div>
-</details>
-
 <div class="btn-group">
     <button class="btn" id="btn_copy" onclick="exportData()">Copy String</button>
-    <button class="btn btn-sync" id="btn_sync" onclick="openModal('sync_modal')">Import Sync</button>
+    <div class="sync-info">
+        <button class="btn btn-sync" id="btn_cloud_sync" onclick="syncToCloud(true)">Sync Cloud</button>
+        <span class="sync-timestamp" id="sync_time">Last Sync: Never</span>
+    </div>
+</div>
+
+<div class="btn-group" style="margin-top:10px;">
+    <button class="btn btn-sync" id="btn_sync" onclick="openModal('sync_modal')" style="grid-column: span 2;">Import Sync String</button>
 </div>
 
 <div id="sync_modal" class="modal-overlay">
@@ -294,61 +391,74 @@
 
 <div id="medical_modal" class="modal-overlay">
     <div class="modal-body">
-        <div class="modal-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
-            MED-EVAC ROSTER
-        </div>
-        <div id="med_list">
-            <script>
-                const calls = ["MANCHILD (SL)", "RIBS", "SIXX", "RAZOR", "DANGER", "COLDSMOKE", "FOX (VIS-OPS)", "3CHO (MEDIC)"];
-                calls.forEach((cs, i) => {
-                    document.write(`
-                        <div class="med-member-block">
-                            <div style="font-weight:900; color:var(--accent);">${cs}</div>
-                            <div class="med-label">Emergency Contact</div>
-                            <input type="text" id="med_e${i+1}" class="save" placeholder="Name / Phone">
-                            <div class="med-label">Medical Conditions</div>
-                            <input type="text" id="med_m${i+1}" class="save" placeholder="None / Allergies">
-                        </div>
-                    `);
-                });
-            </script>
-        </div>
+        <div class="modal-title">MED-EVAC ROSTER</div>
+        <div id="med_list"></div>
         <div class="modal-btns">
             <button class="btn btn-sync" onclick="closeModal('medical_modal')" style="border-color:#555; color:#aaa;">Return to OPS</button>
         </div>
     </div>
 </div>
 
-<script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = JSON.parse(__firebase_config);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'spectre-v1';
+
     let textInputs, checkboxes;
+    let missions = [];
+    let jtfMembers = [];
+    let syncState = 'idle'; // 'idle', 'modified', 'synced'
+
+    // --- ARCHITECT LOCK: LOGIC PATTERNS ---
+    
     function refreshNodes() {
         textInputs = document.querySelectorAll('.save');
         checkboxes = document.querySelectorAll('.save-check');
     }
 
-    window.onload = () => {
-        refreshNodes();
-        textInputs.forEach(el => {
-            const val = localStorage.getItem('spectre_' + el.id);
-            if (val) el.value = val;
-            el.addEventListener('input', () => localStorage.setItem('spectre_' + el.id, el.value));
-        });
-        checkboxes.forEach(el => {
-            const val = localStorage.getItem('spectre_' + el.id);
-            if (val === 'true') el.checked = true;
-            el.addEventListener('change', () => localStorage.setItem('spectre_' + el.id, el.checked));
-        });
-    };
-
-    function showFeedback(btnId, originalText, successText) {
-        const btn = document.getElementById(btnId);
-        btn.innerText = successText; btn.classList.add('success');
-        setTimeout(() => { btn.innerText = originalText; btn.classList.remove('success'); }, 1500);
+    function setSyncState(state) {
+        syncState = state;
+        const btn = document.getElementById('btn_cloud_sync');
+        btn.classList.remove('modified', 'synced');
+        
+        if (state === 'modified') {
+            btn.classList.add('modified');
+            btn.innerText = 'SYNC CLOUD*';
+        } else if (state === 'synced') {
+            btn.classList.add('synced');
+            btn.innerText = 'CLOUD SYNCED';
+            const now = new Date();
+            document.getElementById('sync_time').innerText = `Last Sync: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+        } else {
+            btn.innerText = 'SYNC CLOUD';
+        }
     }
 
-    async function exportData() {
-        let payload = {};
+    function markModified() {
+        setSyncState('modified');
+    }
+
+    function autoResizeInput(input) {
+        if (!input || !input.classList.contains('jtf-callsign-input')) return;
+        const tempSpan = document.createElement('span');
+        tempSpan.style.visibility = 'hidden';
+        tempSpan.style.position = 'absolute';
+        tempSpan.style.whiteSpace = 'pre';
+        tempSpan.style.font = window.getComputedStyle(input).font;
+        tempSpan.textContent = input.value || input.placeholder;
+        document.body.appendChild(tempSpan);
+        input.style.width = (tempSpan.getBoundingClientRect().width + 8) + 'px';
+        document.body.removeChild(tempSpan);
+    }
+
+    window.exportData = async () => {
+        let payload = { missions: missions, jtf: jtfMembers };
         refreshNodes();
         textInputs.forEach(el => {
             if (!['wf', 'c', 'pt', 'cf'].some(pref => el.id.startsWith(pref))) {
@@ -361,23 +471,249 @@
             const el = document.createElement('textarea'); el.value = string; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); 
         }
         showFeedback('btn_copy', 'Copy String', 'COPIED!');
-    }
+    };
 
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-    function executeImport() {
+    window.executeImport = () => {
         const input = document.getElementById('sync_input');
         try {
             const data = JSON.parse(decodeURIComponent(escape(atob(input.value.trim()))));
+            if (data.missions) { missions = data.missions; saveLocalMissions(); renderMissions(); }
+            if (data.jtf) { jtfMembers = data.jtf; saveLocalJTF(); renderJTF(); }
             for (let key in data) {
+                if (key === 'missions' || key === 'jtf') continue;
                 localStorage.setItem('spectre_' + key, data[key]);
                 const el = document.getElementById(key);
                 if (el) el.value = data[key];
             }
-            showFeedback('btn_sync', 'Import Sync', 'SYNCED!'); closeModal('sync_modal');
+            showFeedback('btn_sync', 'Import Sync', 'SYNCED!'); 
+            closeModal('sync_modal');
+            syncToCloud(); 
         } catch(e) { alert("Invalid Sync String."); }
+    };
+
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+    function showFeedback(btnId, originalText, successText) {
+        const btn = document.getElementById(btnId);
+        btn.innerText = successText; btn.classList.add('success');
+        setTimeout(() => { btn.innerText = originalText; btn.classList.remove('success'); }, 1500);
     }
+
+    // --- DATA HANDLING ---
+
+    window.syncToCloud = async (isManual = false) => {
+        if (!auth.currentUser) return;
+        const data = {
+            missions,
+            jtf: jtfMembers,
+            comms: {
+                cmd: document.getElementById('cmd_id').value,
+                sqd: document.getElementById('sqd_ch').value
+            },
+            updatedAt: Date.now()
+        };
+        try {
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'main_state', 'active'), data, { merge: true });
+            setSyncState('synced');
+        } catch (e) { 
+            console.error("Cloud Sync Failed", e); 
+        }
+    };
+
+    function saveLocalMissions() { 
+        localStorage.setItem('spectre_missions', JSON.stringify(missions)); 
+        markModified();
+        syncToCloud(); 
+    }
+    
+    function saveLocalJTF() { 
+        localStorage.setItem('spectre_jtf', JSON.stringify(jtfMembers)); 
+        markModified();
+        syncToCloud(); 
+    }
+
+    window.addMission = () => {
+        missions.push({ id: Date.now(), text: '', status: 'play' });
+        renderMissions();
+        saveLocalMissions();
+    };
+
+    window.updateMissionText = (id, text) => {
+        const m = missions.find(x => x.id === id);
+        if (m) m.text = text;
+        saveLocalMissions();
+    };
+
+    window.toggleMissionStatus = (id) => {
+        const m = missions.find(x => x.id === id);
+        if (m) {
+            if (m.status === 'play') m.status = 'completed';
+            else if (m.status === 'completed') m.status = 'failed';
+            else m.status = 'play';
+        }
+        renderMissions();
+        saveLocalMissions();
+    };
+
+    window.deleteMission = (id) => {
+        missions = missions.filter(x => x.id !== id);
+        renderMissions();
+        saveLocalMissions();
+    };
+
+    window.addJTFMember = () => {
+        jtfMembers.push({ id: Date.now(), callsign: '', role: '', ch: '' });
+        renderJTF();
+        saveLocalJTF();
+    };
+
+    window.updateJTF = (id, field, value, element) => {
+        const member = jtfMembers.find(x => x.id === id);
+        if (member) member[field] = value;
+        if (element && field === 'callsign') autoResizeInput(element);
+        saveLocalJTF();
+    };
+
+    window.removeJTF = (id) => {
+        jtfMembers = jtfMembers.filter(x => x.id !== id);
+        renderJTF();
+        saveLocalJTF();
+    };
+
+    function renderMissions() {
+        const container = document.getElementById('mission_container');
+        container.innerHTML = '';
+        missions.forEach(m => {
+            const div = document.createElement('div');
+            const statuses = { play: ['IN PLAY', 'status-in-play', 'mission-play'], completed: ['COMPLETED', 'status-completed', 'mission-completed'], failed: ['FAILED', 'status-failed', 'mission-failed'] };
+            const [label, sClass, iClass] = statuses[m.status];
+            div.className = `mission-item ${iClass}`;
+            div.innerHTML = `
+                <div class="mission-header">
+                    <div class="status-pill ${sClass}" onclick="toggleMissionStatus(${m.id})">${label}</div>
+                    <button class="mission-delete" onclick="deleteMission(${m.id})">✕</button>
+                </div>
+                <textarea oninput="updateMissionText(${m.id}, this.value)" placeholder="Objective details..." rows="2">${m.text}</textarea>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function renderJTF() {
+        const container = document.getElementById('jtf_roster');
+        container.innerHTML = '';
+        jtfMembers.forEach(m => {
+            const row = document.createElement('div');
+            row.className = 'roster-row jtf';
+            row.innerHTML = `
+                <div class="jtf-callsign-wrap">
+                    <input type="text" class="jtf-callsign-input" value="${m.callsign}" placeholder="CALLSIGN" oninput="updateJTF('${m.id}', 'callsign', this.value, this)">
+                </div>
+                <input type="text" class="jtf-role-input" value="${m.role}" placeholder="Role/Unit" oninput="updateJTF('${m.id}', 'role', this.value)">
+                <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+                    <input type="text" class="jtf-ch-input" value="${m.ch}" placeholder="00" oninput="updateJTF('${m.id}', 'ch', this.value)">
+                    <button onclick="removeJTF('${m.id}')" style="background:none; border:none; color:var(--medical); font-size:12px; padding:0 5px;">✕</button>
+                </div>
+            `;
+            container.appendChild(row);
+            autoResizeInput(row.querySelector('.jtf-callsign-input'));
+        });
+    }
+
+    // --- INITIALIZATION ---
+
+    async function initAuth() {
+        try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+            document.getElementById('cloud_status').innerText = 'Cloud: Online';
+            document.getElementById('cloud_status').classList.add('cloud-online');
+        } catch (e) {
+            document.getElementById('cloud_status').innerText = 'Cloud: Offline';
+            document.getElementById('cloud_status').classList.add('cloud-offline');
+        }
+    }
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) return;
+        onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'main_state', 'active'), (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                if (data.updatedAt && data.updatedAt > (localStorage.getItem('spectre_last_cloud') || 0)) {
+                    missions = data.missions || [];
+                    jtfMembers = data.jtf || [];
+                    localStorage.setItem('spectre_last_cloud', data.updatedAt);
+                    renderMissions();
+                    renderJTF();
+                    setSyncState('synced');
+                }
+            }
+        });
+    });
+
+    window.addEventListener('load', () => {
+        initAuth();
+        
+        const savedMissions = localStorage.getItem('spectre_missions');
+        if (savedMissions) { missions = JSON.parse(savedMissions); renderMissions(); }
+        else { addMission(); }
+
+        const savedJTF = localStorage.getItem('spectre_jtf');
+        if (savedJTF) { jtfMembers = JSON.parse(savedJTF); renderJTF(); }
+        else { jtfMembers = [{ id: 'jtf-initial', callsign: '3CHO', role: 'Joint Ops / Support', ch: '08' }]; renderJTF(); }
+
+        refreshNodes();
+        textInputs.forEach(el => {
+            const val = localStorage.getItem('spectre_' + el.id);
+            if (val) el.value = val;
+            el.addEventListener('input', () => {
+                localStorage.setItem('spectre_' + el.id, el.value);
+                markModified();
+                syncToCloud();
+            });
+        });
+        checkboxes.forEach(el => {
+            const val = localStorage.getItem('spectre_' + el.id);
+            if (val === 'true') el.checked = true;
+            el.addEventListener('change', () => {
+                localStorage.setItem('spectre_' + el.id, el.checked);
+                markModified();
+            });
+        });
+
+        const medContainer = document.getElementById('med_list');
+        const calls = ["MANCHILD (SL)", "RIBS", "SIXX", "RAZOR", "DANGER", "COLDSMOKE", "FOX (VIS-OPS)", "3CHO (MEDIC)"];
+        calls.forEach((cs, i) => {
+            const block = document.createElement('div');
+            block.className = 'med-member-block';
+            block.innerHTML = `
+                <div style="font-weight:900; color:var(--accent);">${cs}</div>
+                <div class="med-label">Emergency Contact</div>
+                <input type="text" id="med_e${i+1}" class="save" placeholder="Name / Phone">
+                <div class="med-label">Medical Conditions</div>
+                <input type="text" id="med_m${i+1}" class="save" placeholder="None / Allergies">
+            `;
+            medContainer.appendChild(block);
+        });
+        refreshNodes();
+        
+        // Re-apply listeners to newly generated med nodes
+        document.querySelectorAll('.med-member-block input').forEach(el => {
+             const val = localStorage.getItem('spectre_' + el.id);
+             if (val) el.value = val;
+             el.addEventListener('input', () => {
+                 localStorage.setItem('spectre_' + el.id, el.value);
+                 markModified();
+                 syncToCloud();
+             });
+        });
+
+        setSyncState('idle');
+    });
 </script>
 </body>
 </html>
