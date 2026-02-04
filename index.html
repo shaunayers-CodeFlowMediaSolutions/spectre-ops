@@ -7,10 +7,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>SPECTRE VIS-OPS</title>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
     <style>
         :root { 
             --bg: #0f1113; 
@@ -22,7 +18,7 @@
             --ares: #007aff;
             --success: #34c759;
             --medical: #ff3b30;
-            --header-main: #ffffff; /* High contrast for Main Headers */
+            --header-main: #ffffff;
             --grey-btn: #3a3f44;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -101,14 +97,8 @@
         .category-trigger[open] summary::after { transform: rotate(180deg); }
         .category-content { border-top: 1px solid #333; }
 
-        .mission-item { 
-            padding: 15px; 
-            border-bottom: 1px solid #333; 
-            position: relative; 
-            transition: background 0.3s ease;
-        }
+        .mission-item { padding: 15px; border-bottom: 1px solid #333; position: relative; }
         .mission-item:last-child { border-bottom: none; }
-        
         .mission-play { background: transparent; }
         .mission-completed { background: rgba(52, 199, 89, 0.15); border-left: 4px solid var(--success); }
         .mission-failed { background: rgba(255, 59, 48, 0.15); border-left: 4px solid var(--medical); }
@@ -128,7 +118,7 @@
         .status-completed { background: var(--success); color: #000; border-color: var(--success); }
         .status-failed { background: var(--medical); color: #fff; border-color: var(--medical); }
         
-        .btn-add-mission { background: #2c2f33; color: var(--accent); border: 1px dashed var(--accent); padding: 10px; width: 100%; border-radius: 8px; font-weight: 800; margin: 10px 0; font-size: 12px; }
+        .btn-add-mission { background: #2c2f33; color: var(--accent); border: 1px dashed var(--accent); padding: 10px; width: 100%; border-radius: 8px; font-weight: 800; margin: 10px 0; font-size: 12px; cursor: pointer; }
         .mission-delete { color: var(--dim); font-size: 12px; border: none; background: none; padding: 5px; cursor: pointer; }
 
         .card { background: var(--card); border-radius: 14px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); overflow: hidden; border: 1px solid #333; }
@@ -145,7 +135,6 @@
             font-size: 15px; 
             width: 100%; 
             outline: none; 
-            transition: border-color 0.2s;
         }
         input:focus { border-color: var(--accent); }
         
@@ -159,43 +148,23 @@
             font-weight: 800; 
             border-radius: 10px; 
             margin-bottom: 10px;
-            box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
         }
         
         .roster-header { display: grid; grid-template-columns: 100px 1fr 50px; font-size: 10px; color: var(--dim); padding: 0 16px; margin-bottom: 4px; font-weight: 800; }
         .roster-row { display: grid; grid-template-columns: 100px 1fr 50px; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #333; align-items: center; }
         
-        .roster-row.jtf { 
-            display: flex; 
-            gap: 12px; 
-            width: 100%;
-        }
-        .roster-row.jtf .jtf-callsign-wrap {
-            display: flex;
-            align-items: center;
-            flex-shrink: 0;
-        }
+        .roster-row.jtf { display: flex; gap: 12px; width: 100%; }
         .roster-row.jtf .jtf-callsign-input {
-            width: auto;
-            flex-shrink: 0;
-            flex-grow: 0;
+            width: 80px;
             background: transparent;
             border: none;
             padding: 0;
             font-weight: 900;
             color: var(--accent);
             text-transform: uppercase;
-            overflow: visible;
         }
-        .roster-row.jtf .jtf-role-input {
-            flex-grow: 1;
-            min-width: 50px;
-        }
-        .roster-row.jtf .jtf-ch-input {
-            width: 45px;
-            flex-shrink: 0;
-            text-align: center;
-        }
+        .roster-row.jtf .jtf-role-input { flex-grow: 1; }
+        .roster-row.jtf .jtf-ch-input { width: 45px; flex-shrink: 0; text-align: center; }
 
         .roster-row b { font-size: 14px; color: var(--accent); }
 
@@ -203,15 +172,14 @@
         .check-row input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--accent); }
 
         .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; align-items: center; }
-        .btn { background: var(--accent); color: #000; border: none; padding: 15px; border-radius: 10px; font-weight: 800; width: 100%; font-size: 14px; cursor: pointer; transition: background 0.2s, color 0.2s; }
+        .btn { background: var(--accent); color: #000; border: none; padding: 15px; border-radius: 10px; font-weight: 800; width: 100%; font-size: 14px; cursor: pointer; }
         
-        /* Dynamic Sync Button Styles */
         .btn-sync { background: var(--grey-btn); color: var(--dim); border: 1px solid #444; }
         .btn-sync.modified { background: var(--accent); color: #000; border-color: var(--accent); }
         .btn-sync.synced { background: var(--success); color: #000; border-color: var(--success); }
 
         .sync-info { display: flex; flex-direction: column; gap: 4px; }
-        .sync-timestamp { font-size: 9px; color: var(--dim); font-weight: 800; text-transform: uppercase; }
+        .sync-timestamp { font-size: 9px; color: var(--dim); font-weight: 800; text-transform: uppercase; text-align: center; }
 
         .modal-overlay {
             display: none;
@@ -222,7 +190,6 @@
             padding: 20px;
             align-items: center;
             justify-content: center;
-            overflow-y: auto;
         }
         .modal-body {
             background: var(--card);
@@ -234,14 +201,12 @@
             max-height: 90vh;
             overflow-y: auto;
         }
-        .modal-title { font-weight: 800; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; font-size: 14px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .modal-btns { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
-
+        .modal-title { font-weight: 800; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; font-size: 14px; text-align: center; }
+        
         .med-member-block { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 15px; }
         .med-member-block:last-child { border-bottom: none; }
         .med-label { font-size: 10px; color: var(--dim); margin: 8px 0 4px 0; font-weight: 800; text-transform: uppercase; }
         
-        /* Cloud Status Indicator */
         #cloud_status { font-size: 9px; color: var(--dim); text-align: right; margin-top: 4px; font-weight: 700; text-transform: uppercase; }
         .cloud-online { color: var(--success) !important; }
         .cloud-offline { color: var(--warning) !important; }
@@ -255,7 +220,7 @@
     <h1>SPECTRE</h1>
     <div class="squad-name">Loyal Serpent 8 | VIS-OPS & Comms Specialist</div>
     <div id="cloud_status">Cloud: Checking...</div>
-    <button class="med-trigger" onclick="openModal('medical_modal')" title="Emergency Med Info">
+    <button class="med-trigger" onclick="window.openModal('medical_modal')" title="Emergency Med Info">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
     </button>
 </header>
@@ -266,7 +231,7 @@
     <div class="category-content">
         <div id="mission_container"></div>
         <div style="padding: 0 15px 15px 15px;">
-            <button class="btn-add-mission" onclick="addMission()">+ ADD NEW OBJECTIVE</button>
+            <button class="btn-add-mission" onclick="window.addMission()">+ ADD NEW OBJECTIVE</button>
         </div>
     </div>
 </details>
@@ -316,7 +281,7 @@
         <div class="roster-header"><span>CALLSIGN</span><span>ROLE(S)</span><span>CH#</span></div>
         <div id="jtf_roster"></div>
         <div style="padding: 0 15px 15px 15px;">
-            <button class="btn-add-mission" onclick="addJTFMember()">+ ADD JTF PERSONNEL</button>
+            <button class="btn-add-mission" onclick="window.addJTFMember()">+ ADD JTF PERSONNEL</button>
         </div>
     </div>
 </details>
@@ -331,61 +296,14 @@
         <div class="row"><span>Delta</span><input type="text" id="ext_d" class="save" placeholder="CH / Freq"></div>
         <div class="row"><span>Echo</span><input type="text" id="ext_e" class="save" placeholder="CH / Freq"></div>
         <div class="row"><span>Foxtrot</span><input type="text" id="ext_f" class="save" placeholder="CH / Freq"></div>
-        <div class="row"><span>Golf</span><input type="text" id="ext_g" class="save" placeholder="CH / Freq"></div>
-        <div class="row"><span>Hotel</span><input type="text" id="ext_h" class="save" placeholder="CH / Freq"></div>
-        <div class="row"><span>India</span><input type="text" id="ext_i" class="save" placeholder="CH / Freq"></div>
-        <div class="row"><span>Juliet</span><input type="text" id="ext_j" class="save" placeholder="CH / Freq"></div>
-        <div class="row"><span>Kilo</span><input type="text" id="ext_k" class="save" placeholder="CH / Freq"></div>
-        <div class="row"><span>Lima</span><input type="text" id="ext_l" class="save" placeholder="CH / Freq"></div>
-        <div class="row"><span>Mike</span><input type="text" id="ext_m" class="save" placeholder="CH / Freq"></div>
-    </div>
-</details>
-
-<div class="section-label">⚡ Start-State Workflow</div>
-<details class="category-trigger">
-    <summary>Pre-Game Transition</summary>
-    <div class="category-content">
-        <div class="check-row"><span>Step 1: Set Up Base Camp</span><input type="checkbox" id="wf1" class="save-check"></div>
-        <div class="check-row"><span>Step 2: Pre-Op Meal / Hydration</span><input type="checkbox" id="wf2" class="save-check"></div>
-        <div class="check-row"><span>Step 3: Gear Up (Full Kit)</span><input type="checkbox" id="wf3" class="save-check"></div>
-        <div class="check-row"><span>Step 4: Comms Check (Sub-Squad)</span><input type="checkbox" id="wf4" class="save-check"></div>
-        <div class="check-row"><span>Step 5: Gun Chrono (Verified)</span><input type="checkbox" id="wf5" class="save-check"></div>
-        <div class="check-row"><span>Step 6: Final Briefing / Ares Check</span><input type="checkbox" id="wf6" class="save-check"></div>
-    </div>
-</details>
-
-<div class="section-label">🚁 FOX - VIS-OPS Checklist</div>
-<details class="category-trigger">
-    <summary>Media Gear Check</summary>
-    <div class="category-content">
-        <div class="check-row"><span>GoPro Batteries Charged (x4)</span><input type="checkbox" id="c1" class="save-check"></div>
-        <div class="check-row"><span>DJI Mini Batteries (x3)</span><input type="checkbox" id="c2" class="save-check"></div>
-        <div class="check-row"><span>SD Cards Cleared / Spares</span><input type="checkbox" id="c3" class="save-check"></div>
-        <div class="check-row"><span>Lens Microfiber Cloth</span><input type="checkbox" id="c4" class="save-check"></div>
-        <div class="check-row"><span>Power Bank & Cables</span><input type="checkbox" id="c5" class="save-check"></div>
     </div>
 </details>
 
 <div class="btn-group">
-    <button class="btn" id="btn_copy" onclick="exportData()">Copy String</button>
+    <button class="btn" id="btn_copy" onclick="window.exportData()">Copy String</button>
     <div class="sync-info">
-        <button class="btn btn-sync" id="btn_cloud_sync" onclick="syncToCloud(true)">Sync Cloud</button>
+        <button class="btn btn-sync" id="btn_cloud_sync" onclick="window.syncToCloud(true)">Sync Cloud</button>
         <span class="sync-timestamp" id="sync_time">Last Sync: Never</span>
-    </div>
-</div>
-
-<div class="btn-group" style="margin-top:10px;">
-    <button class="btn btn-sync" id="btn_sync" onclick="openModal('sync_modal')" style="grid-column: span 2;">Import Sync String</button>
-</div>
-
-<div id="sync_modal" class="modal-overlay">
-    <div class="modal-body">
-        <div class="modal-title">Sync String Import</div>
-        <textarea id="sync_input" rows="4" placeholder="Paste squad sync string here..."></textarea>
-        <div class="modal-btns">
-            <button class="btn" onclick="executeImport()">Execute Import</button>
-            <button class="btn btn-sync" onclick="closeModal('sync_modal')" style="border-color:#555; color:#aaa; margin-top:10px;">Close</button>
-        </div>
     </div>
 </div>
 
@@ -393,9 +311,7 @@
     <div class="modal-body">
         <div class="modal-title">MED-EVAC ROSTER</div>
         <div id="med_list"></div>
-        <div class="modal-btns">
-            <button class="btn btn-sync" onclick="closeModal('medical_modal')" style="border-color:#555; color:#aaa;">Return to OPS</button>
-        </div>
+        <button class="btn btn-sync" onclick="window.closeModal('medical_modal')" style="margin-top:10px;">Return to OPS</button>
     </div>
 </div>
 
@@ -408,23 +324,19 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'spectre-v1';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'spectre-ops-v1';
 
-    let textInputs, checkboxes;
     let missions = [];
     let jtfMembers = [];
-    let syncState = 'idle'; // 'idle', 'modified', 'synced'
+    let isCloudOnline = false;
 
-    // --- ARCHITECT LOCK: LOGIC PATTERNS ---
-    
-    function refreshNodes() {
-        textInputs = document.querySelectorAll('.save');
-        checkboxes = document.querySelectorAll('.save-check');
-    }
+    // --- UTILITIES ---
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
 
     function setSyncState(state) {
-        syncState = state;
         const btn = document.getElementById('btn_cloud_sync');
+        const ts = document.getElementById('sync_time');
         btn.classList.remove('modified', 'synced');
         
         if (state === 'modified') {
@@ -434,151 +346,64 @@
             btn.classList.add('synced');
             btn.innerText = 'CLOUD SYNCED';
             const now = new Date();
-            document.getElementById('sync_time').innerText = `Last Sync: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            ts.innerText = `Last Sync: ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
         } else {
             btn.innerText = 'SYNC CLOUD';
         }
     }
 
-    function markModified() {
-        setSyncState('modified');
-    }
-
-    function autoResizeInput(input) {
-        if (!input || !input.classList.contains('jtf-callsign-input')) return;
-        const tempSpan = document.createElement('span');
-        tempSpan.style.visibility = 'hidden';
-        tempSpan.style.position = 'absolute';
-        tempSpan.style.whiteSpace = 'pre';
-        tempSpan.style.font = window.getComputedStyle(input).font;
-        tempSpan.textContent = input.value || input.placeholder;
-        document.body.appendChild(tempSpan);
-        input.style.width = (tempSpan.getBoundingClientRect().width + 8) + 'px';
-        document.body.removeChild(tempSpan);
-    }
-
-    window.exportData = async () => {
-        let payload = { missions: missions, jtf: jtfMembers };
-        refreshNodes();
-        textInputs.forEach(el => {
-            if (!['wf', 'c', 'pt', 'cf'].some(pref => el.id.startsWith(pref))) {
-                payload[el.id] = el.value;
-            }
-        });
-        const string = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-        try { await navigator.clipboard.writeText(string); } 
-        catch (err) { 
-            const el = document.createElement('textarea'); el.value = string; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); 
-        }
-        showFeedback('btn_copy', 'Copy String', 'COPIED!');
-    };
-
-    window.executeImport = () => {
-        const input = document.getElementById('sync_input');
-        try {
-            const data = JSON.parse(decodeURIComponent(escape(atob(input.value.trim()))));
-            if (data.missions) { missions = data.missions; saveLocalMissions(); renderMissions(); }
-            if (data.jtf) { jtfMembers = data.jtf; saveLocalJTF(); renderJTF(); }
-            for (let key in data) {
-                if (key === 'missions' || key === 'jtf') continue;
-                localStorage.setItem('spectre_' + key, data[key]);
-                const el = document.getElementById(key);
-                if (el) el.value = data[key];
-            }
-            showFeedback('btn_sync', 'Import Sync', 'SYNCED!'); 
-            closeModal('sync_modal');
-            syncToCloud(); 
-        } catch(e) { alert("Invalid Sync String."); }
-    };
-
-    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
-    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
-
-    function showFeedback(btnId, originalText, successText) {
-        const btn = document.getElementById(btnId);
-        btn.innerText = successText; btn.classList.add('success');
-        setTimeout(() => { btn.innerText = originalText; btn.classList.remove('success'); }, 1500);
-    }
-
     // --- DATA HANDLING ---
-
     window.syncToCloud = async (isManual = false) => {
         if (!auth.currentUser) return;
         const data = {
             missions,
             jtf: jtfMembers,
-            comms: {
-                cmd: document.getElementById('cmd_id').value,
-                sqd: document.getElementById('sqd_ch').value
-            },
             updatedAt: Date.now()
         };
         try {
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'main_state', 'active'), data, { merge: true });
             setSyncState('synced');
-        } catch (e) { 
-            console.error("Cloud Sync Failed", e); 
-        }
+        } catch (e) { console.error(e); }
     };
-
-    function saveLocalMissions() { 
-        localStorage.setItem('spectre_missions', JSON.stringify(missions)); 
-        markModified();
-        syncToCloud(); 
-    }
-    
-    function saveLocalJTF() { 
-        localStorage.setItem('spectre_jtf', JSON.stringify(jtfMembers)); 
-        markModified();
-        syncToCloud(); 
-    }
 
     window.addMission = () => {
         missions.push({ id: Date.now(), text: '', status: 'play' });
         renderMissions();
-        saveLocalMissions();
-    };
-
-    window.updateMissionText = (id, text) => {
-        const m = missions.find(x => x.id === id);
-        if (m) m.text = text;
-        saveLocalMissions();
+        saveLocal();
     };
 
     window.toggleMissionStatus = (id) => {
         const m = missions.find(x => x.id === id);
         if (m) {
-            if (m.status === 'play') m.status = 'completed';
-            else if (m.status === 'completed') m.status = 'failed';
-            else m.status = 'play';
+            const cycle = { 'play': 'completed', 'completed': 'failed', 'failed': 'play' };
+            m.status = cycle[m.status];
         }
         renderMissions();
-        saveLocalMissions();
+        saveLocal();
     };
 
     window.deleteMission = (id) => {
         missions = missions.filter(x => x.id !== id);
         renderMissions();
-        saveLocalMissions();
+        saveLocal();
     };
 
     window.addJTFMember = () => {
         jtfMembers.push({ id: Date.now(), callsign: '', role: '', ch: '' });
         renderJTF();
-        saveLocalJTF();
+        saveLocal();
     };
 
-    window.updateJTF = (id, field, value, element) => {
+    window.updateJTF = (id, field, val) => {
         const member = jtfMembers.find(x => x.id === id);
-        if (member) member[field] = value;
-        if (element && field === 'callsign') autoResizeInput(element);
-        saveLocalJTF();
+        if (member) member[field] = val;
+        saveLocal();
     };
 
     window.removeJTF = (id) => {
         jtfMembers = jtfMembers.filter(x => x.id !== id);
         renderJTF();
-        saveLocalJTF();
+        saveLocal();
     };
 
     function renderMissions() {
@@ -586,19 +411,25 @@
         container.innerHTML = '';
         missions.forEach(m => {
             const div = document.createElement('div');
-            const statuses = { play: ['IN PLAY', 'status-in-play', 'mission-play'], completed: ['COMPLETED', 'status-completed', 'mission-completed'], failed: ['FAILED', 'status-failed', 'mission-failed'] };
-            const [label, sClass, iClass] = statuses[m.status];
+            const map = { play: ['IN PLAY', 'status-in-play', 'mission-play'], completed: ['COMPLETED', 'status-completed', 'mission-completed'], failed: ['FAILED', 'status-failed', 'mission-failed'] };
+            const [label, sClass, iClass] = map[m.status];
             div.className = `mission-item ${iClass}`;
             div.innerHTML = `
                 <div class="mission-header">
-                    <div class="status-pill ${sClass}" onclick="toggleMissionStatus(${m.id})">${label}</div>
-                    <button class="mission-delete" onclick="deleteMission(${m.id})">✕</button>
+                    <div class="status-pill ${sClass}" onclick="window.toggleMissionStatus(${m.id})">${label}</div>
+                    <button class="mission-delete" onclick="window.deleteMission(${m.id})">✕</button>
                 </div>
-                <textarea oninput="updateMissionText(${m.id}, this.value)" placeholder="Objective details..." rows="2">${m.text}</textarea>
+                <textarea oninput="window.updateMissionText(${m.id}, this.value)" placeholder="Objective details..." rows="2">${m.text}</textarea>
             `;
             container.appendChild(div);
         });
     }
+
+    window.updateMissionText = (id, val) => {
+        const m = missions.find(x => x.id === id);
+        if (m) m.text = val;
+        saveLocal();
+    };
 
     function renderJTF() {
         const container = document.getElementById('jtf_roster');
@@ -607,43 +438,86 @@
             const row = document.createElement('div');
             row.className = 'roster-row jtf';
             row.innerHTML = `
-                <div class="jtf-callsign-wrap">
-                    <input type="text" class="jtf-callsign-input" value="${m.callsign}" placeholder="CALLSIGN" oninput="updateJTF('${m.id}', 'callsign', this.value, this)">
-                </div>
-                <input type="text" class="jtf-role-input" value="${m.role}" placeholder="Role/Unit" oninput="updateJTF('${m.id}', 'role', this.value)">
-                <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
-                    <input type="text" class="jtf-ch-input" value="${m.ch}" placeholder="00" oninput="updateJTF('${m.id}', 'ch', this.value)">
-                    <button onclick="removeJTF('${m.id}')" style="background:none; border:none; color:var(--medical); font-size:12px; padding:0 5px;">✕</button>
-                </div>
+                <input type="text" class="jtf-callsign-input" value="${m.callsign}" placeholder="CALLSIGN" oninput="window.updateJTF('${m.id}', 'callsign', this.value)">
+                <input type="text" class="jtf-role-input" value="${m.role}" placeholder="Role/Unit" oninput="window.updateJTF('${m.id}', 'role', this.value)">
+                <input type="text" class="jtf-ch-input" value="${m.ch}" placeholder="00" oninput="window.updateJTF('${m.id}', 'ch', this.value)">
+                <button onclick="window.removeJTF('${m.id}')" style="background:none; border:none; color:var(--medical); font-size:12px;">✕</button>
             `;
             container.appendChild(row);
-            autoResizeInput(row.querySelector('.jtf-callsign-input'));
         });
     }
 
-    // --- INITIALIZATION ---
+    function saveLocal() {
+        localStorage.setItem('spectre_missions', JSON.stringify(missions));
+        localStorage.setItem('spectre_jtf', JSON.stringify(jtfMembers));
+        setSyncState('modified');
+        window.syncToCloud();
+    }
 
-    async function initAuth() {
+    // --- AUTH & INIT ---
+    async function start() {
         try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
             } else {
                 await signInAnonymously(auth);
             }
+            isCloudOnline = true;
             document.getElementById('cloud_status').innerText = 'Cloud: Online';
             document.getElementById('cloud_status').classList.add('cloud-online');
         } catch (e) {
             document.getElementById('cloud_status').innerText = 'Cloud: Offline';
             document.getElementById('cloud_status').classList.add('cloud-offline');
         }
+
+        // Load Local
+        const m = localStorage.getItem('spectre_missions');
+        if (m) missions = JSON.parse(m);
+        const j = localStorage.getItem('spectre_jtf');
+        if (j) jtfMembers = JSON.parse(j);
+        
+        renderMissions();
+        renderJTF();
+
+        // Register Inputs
+        document.querySelectorAll('.save').forEach(el => {
+            const val = localStorage.getItem('spectre_' + el.id);
+            if (val) el.value = val;
+            el.addEventListener('input', () => {
+                localStorage.setItem('spectre_' + el.id, el.value);
+                setSyncState('modified');
+                window.syncToCloud();
+            });
+        });
+
+        // Setup Medical (Privacy Guarded)
+        const medList = document.getElementById('med_list');
+        const calls = ["MANCHILD", "RIBS", "SIXX", "RAZOR", "DANGER", "COLDSMOKE", "FOX", "3CHO"];
+        calls.forEach((c, i) => {
+            const div = document.createElement('div');
+            div.className = 'med-member-block';
+            div.innerHTML = `
+                <div style="font-weight:900; color:var(--accent);">${c}</div>
+                <div class="med-label">Emergency Contact</div>
+                <input type="text" id="med_e${i}" class="med-save" placeholder="Name / Phone">
+                <div class="med-label">Medical Conditions</div>
+                <input type="text" id="med_m${i}" class="med-save" placeholder="Allergies / Blood Type">
+            `;
+            medList.appendChild(div);
+        });
+        document.querySelectorAll('.med-save').forEach(el => {
+            const val = localStorage.getItem('spectre_' + el.id);
+            if (val) el.value = val;
+            el.addEventListener('input', () => localStorage.setItem('spectre_' + el.id, el.value));
+        });
     }
 
     onAuthStateChanged(auth, (user) => {
         if (!user) return;
-        onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'main_state', 'active'), (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.data();
-                if (data.updatedAt && data.updatedAt > (localStorage.getItem('spectre_last_cloud') || 0)) {
+        onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'main_state', 'active'), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.updatedAt > (localStorage.getItem('spectre_last_cloud') || 0)) {
                     missions = data.missions || [];
                     jtfMembers = data.jtf || [];
                     localStorage.setItem('spectre_last_cloud', data.updatedAt);
@@ -655,65 +529,7 @@
         });
     });
 
-    window.addEventListener('load', () => {
-        initAuth();
-        
-        const savedMissions = localStorage.getItem('spectre_missions');
-        if (savedMissions) { missions = JSON.parse(savedMissions); renderMissions(); }
-        else { addMission(); }
-
-        const savedJTF = localStorage.getItem('spectre_jtf');
-        if (savedJTF) { jtfMembers = JSON.parse(savedJTF); renderJTF(); }
-        else { jtfMembers = [{ id: 'jtf-initial', callsign: '3CHO', role: 'Joint Ops / Support', ch: '08' }]; renderJTF(); }
-
-        refreshNodes();
-        textInputs.forEach(el => {
-            const val = localStorage.getItem('spectre_' + el.id);
-            if (val) el.value = val;
-            el.addEventListener('input', () => {
-                localStorage.setItem('spectre_' + el.id, el.value);
-                markModified();
-                syncToCloud();
-            });
-        });
-        checkboxes.forEach(el => {
-            const val = localStorage.getItem('spectre_' + el.id);
-            if (val === 'true') el.checked = true;
-            el.addEventListener('change', () => {
-                localStorage.setItem('spectre_' + el.id, el.checked);
-                markModified();
-            });
-        });
-
-        const medContainer = document.getElementById('med_list');
-        const calls = ["MANCHILD (SL)", "RIBS", "SIXX", "RAZOR", "DANGER", "COLDSMOKE", "FOX (VIS-OPS)", "3CHO (MEDIC)"];
-        calls.forEach((cs, i) => {
-            const block = document.createElement('div');
-            block.className = 'med-member-block';
-            block.innerHTML = `
-                <div style="font-weight:900; color:var(--accent);">${cs}</div>
-                <div class="med-label">Emergency Contact</div>
-                <input type="text" id="med_e${i+1}" class="save" placeholder="Name / Phone">
-                <div class="med-label">Medical Conditions</div>
-                <input type="text" id="med_m${i+1}" class="save" placeholder="None / Allergies">
-            `;
-            medContainer.appendChild(block);
-        });
-        refreshNodes();
-        
-        // Re-apply listeners to newly generated med nodes
-        document.querySelectorAll('.med-member-block input').forEach(el => {
-             const val = localStorage.getItem('spectre_' + el.id);
-             if (val) el.value = val;
-             el.addEventListener('input', () => {
-                 localStorage.setItem('spectre_' + el.id, el.value);
-                 markModified();
-                 syncToCloud();
-             });
-        });
-
-        setSyncState('idle');
-    });
+    window.addEventListener('load', start);
 </script>
 </body>
 </html>
