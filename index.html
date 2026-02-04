@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>SPECTRE VIS-OPS</title>
+    <style>
+        :root { 
+            --bg: #0f1113; 
+            --card: #1c1f23; 
+            --accent: #ff9500; 
+            --text: #e0e0e0; 
+            --dim: #8e8e93; 
+            --warning: #ff3b30; 
+            --ares: #007aff;
+            --success: #34c759;
+            --medical: #ff3b30;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 20px 15px 100px 15px; 
+            line-height: 1.4;
+        }
+        
+        .cache-warning { 
+            background: var(--warning); 
+            color: #fff; 
+            padding: 12px; 
+            border-radius: 10px; 
+            font-size: 11px; 
+            font-weight: 900; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            text-transform: uppercase;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        header { position: relative; }
+        h1 { color: var(--accent); margin: 0; font-size: 28px; letter-spacing: 3px; font-weight: 900; }
+        .squad-name { font-size: 14px; color: var(--dim); margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; font-weight: 600; }
+        
+        .med-trigger {
+            position: absolute;
+            right: 0;
+            top: 5px;
+            background: var(--medical);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 59, 48, 0.4);
+            animation: pulse-med 2s infinite;
+        }
+        @keyframes pulse-med {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+        }
+
+        .section-label { font-size: 11px; color: var(--dim); text-transform: uppercase; margin: 25px 0 8px 5px; font-weight: 700; letter-spacing: 1.5px; }
+        
+        .category-trigger { background: var(--card); border-radius: 14px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); border: 1px solid #333; }
+        .category-trigger summary { padding: 16px; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; list-style: none; color: var(--text); align-items: center; }
+        .category-trigger summary::after { content: '▼'; font-size: 10px; color: var(--accent); transition: transform 0.2s; }
+        .category-trigger[open] summary::after { transform: rotate(180deg); }
+        .category-content { border-top: 1px solid #333; }
+
+        .card { background: var(--card); border-radius: 14px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); overflow: hidden; border: 1px solid #333; }
+        
+        .row { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #333; gap: 10px; }
+        .row:last-child { border-bottom: none; }
+        
+        input, textarea { 
+            background: #2c2f33; 
+            border: 1px solid #444; 
+            color: #fff; 
+            padding: 10px; 
+            border-radius: 8px; 
+            font-size: 15px; 
+            width: 100%; 
+            outline: none; 
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--accent); }
+        
+        .ares-link { 
+            background: var(--ares); 
+            color: white; 
+            text-decoration: none; 
+            display: block; 
+            text-align: center; 
+            padding: 14px; 
+            font-weight: 800; 
+            border-radius: 10px; 
+            margin-bottom: 10px;
+            box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+        }
+        
+        .roster-header { display: grid; grid-template-columns: 100px 1fr 50px; font-size: 10px; color: var(--dim); padding: 0 16px; margin-bottom: 4px; font-weight: 800; }
+        .roster-row { display: grid; grid-template-columns: 100px 1fr 50px; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #333; align-items: center; }
+        .roster-row b { font-size: 14px; color: var(--accent); }
+
+        .check-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #333; }
+        .check-row input[type="checkbox"] { width: 24px; height: 24px; accent-color: var(--accent); }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .btn { background: var(--accent); color: #000; border: none; padding: 15px; border-radius: 10px; font-weight: 800; width: 100%; font-size: 14px; cursor: pointer; transition: background 0.2s, color 0.2s; }
+        .btn-sync { background: #333; color: var(--accent); border: 1px solid var(--accent); }
+        .btn.success { background: var(--success) !important; color: #fff !important; border-color: var(--success) !important; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 9999;
+            padding: 20px;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+        }
+        .modal-body {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--accent);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-title { font-weight: 800; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; font-size: 14px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .modal-btns { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+
+        .med-member-block { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 15px; }
+        .med-member-block:last-child { border-bottom: none; }
+        .med-label { font-size: 10px; color: var(--dim); margin: 8px 0 4px 0; font-weight: 800; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div class="cache-warning">⚠️ DO NOT CLEAR CACHE - DATA IS OFFLINE ONLY ⚠️</div>
+
+<header>
+    <h1>SPECTRE</h1>
+    <div class="squad-name">Loyal Serpent 8 | VIS-OPS & Comms Specialist</div>
+    <button class="med-trigger" onclick="openModal('medical_modal')" title="Emergency Med Info">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
+    </button>
+</header>
+
+<div class="section-label">📝 Field Intel / Orders</div>
+<details class="category-trigger" open>
+    <summary>Mission Intelligence</summary>
+    <div class="category-content">
+        <textarea id="intel" class="save" rows="5" placeholder="Enter commander orders or mission intelligence here..." style="border:none; border-radius:0;"></textarea>
+    </div>
+</details>
+
+<div class="section-label">📍 Ares Alpha Tracking</div>
+<details class="category-trigger">
+    <summary>Live Battle Map</summary>
+    <div class="category-content">
+        <div style="padding:15px;">
+            <a href="https://ares-alpha.com/" target="_blank" class="ares-link">OPEN ARES ALPHA WEB</a>
+            <div class="row" style="padding:10px 0 0 0;"><span>Team ID</span><input type="text" id="ares_id" class="save" placeholder="Spectre-Main"></div>
+            <div class="row" style="padding:10px 0 0 0;"><span>Join Code</span><input type="text" id="ares_pass" class="save" placeholder="Passcode"></div>
+        </div>
+    </div>
+</details>
+
+<div class="section-label">📡 Command Frequencies</div>
+<details class="category-trigger" open>
+    <summary>Radio Comms</summary>
+    <div class="category-content">
+        <div class="row"><span>Commander</span><input type="text" id="cmd_id" class="save" placeholder="HQ Callsign"></div>
+        <div class="row"><span>Squad Prim.</span><input type="text" id="sqd_ch" class="save" placeholder="462.xxxx"></div>
+    </div>
+</details>
+
+<div class="section-label">👥 Spectre Roster</div>
+<details class="category-trigger">
+    <summary>Squad Roster</summary>
+    <div class="category-content">
+        <div class="roster-header"><span>CALLSIGN</span><span>ROLE(S)</span><span>CH#</span></div>
+        <div id="roster">
+            <div class="roster-row"><b>Manchild</b><input type="text" id="r1" class="save" value="Squad Leader"> <input type="text" id="n1" class="save" value="01"></div>
+            <div class="roster-row"><b>Ribs</b><input type="text" id="r2" class="save" value="Rifleman"> <input type="text" id="n2" class="save" value="02"></div>
+            <div class="roster-row"><b>SIXX</b><input type="text" id="r3" class="save" value="Sniper"> <input type="text" id="n3" class="save" value="03"></div>
+            <div class="roster-row"><b>Razor</b><input type="text" id="r4" class="save" value="LMG / DMR"> <input type="text" id="n4" class="save" value="04"></div>
+            <div class="roster-row"><b>Danger</b><input type="text" id="r5" class="save" value="Rifleman"> <input type="text" id="n5" class="save" value="05"></div>
+            <div class="roster-row"><b>Coldsmoke</b><input type="text" id="r6" class="save" value="Rifleman / LMG"> <input type="text" id="n6" class="save" value="06"></div>
+            <div class="roster-row"><b>FOX</b><input type="text" id="r7" class="save" value="COMCAM / VIS / Drone"> <input type="text" id="n7" class="save" value="07"></div>
+            <div class="roster-row"><b>3CHO</b><input type="text" id="r8" class="save" value="Rifleman / Medic"> <input type="text" id="n8" class="save" value="08"></div>
+        </div>
+    </div>
+</details>
+
+<div class="section-label">🌐 External Contacts</div>
+<details class="category-trigger" open>
+    <summary>Other Squads</summary>
+    <div class="category-content">
+        <div class="row"><span>Alpha</span><input type="text" id="ext_a" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Bravo</span><input type="text" id="ext_b" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Charlie</span><input type="text" id="ext_c" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Delta</span><input type="text" id="ext_d" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Echo</span><input type="text" id="ext_e" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Foxtrot</span><input type="text" id="ext_f" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Golf</span><input type="text" id="ext_g" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Hotel</span><input type="text" id="ext_h" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>India</span><input type="text" id="ext_i" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Juliet</span><input type="text" id="ext_j" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Kilo</span><input type="text" id="ext_k" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Lima</span><input type="text" id="ext_l" class="save" placeholder="CH / Freq"></div>
+        <div class="row"><span>Mike</span><input type="text" id="ext_m" class="save" placeholder="CH / Freq"></div>
+    </div>
+</details>
+
+<div class="section-label">⚡ Start-State Workflow</div>
+<details class="category-trigger">
+    <summary>Pre-Game Transition</summary>
+    <div class="category-content">
+        <div class="check-row"><span>Step 1: Set Up Base Camp</span><input type="checkbox" id="wf1" class="save-check"></div>
+        <div class="check-row"><span>Step 2: Pre-Op Meal / Hydration</span><input type="checkbox" id="wf2" class="save-check"></div>
+        <div class="check-row"><span>Step 3: Gear Up (Full Kit)</span><input type="checkbox" id="wf3" class="save-check"></div>
+        <div class="check-row"><span>Step 4: Comms Check (Sub-Squad)</span><input type="checkbox" id="wf4" class="save-check"></div>
+        <div class="check-row"><span>Step 5: Gun Chrono (Verified)</span><input type="checkbox" id="wf5" class="save-check"></div>
+        <div class="check-row"><span>Step 6: Final Briefing / Ares Check</span><input type="checkbox" id="wf6" class="save-check"></div>
+    </div>
+</details>
+
+<div class="section-label">🚁 FOX - VIS-OPS Checklist</div>
+<details class="category-trigger">
+    <summary>Media Gear Check</summary>
+    <div class="category-content">
+        <div class="check-row"><span>GoPro Batteries Charged (x4)</span><input type="checkbox" id="c1" class="save-check"></div>
+        <div class="check-row"><span>DJI Mini Batteries (x3)</span><input type="checkbox" id="c2" class="save-check"></div>
+        <div class="check-row"><span>SD Cards Cleared / Spares</span><input type="checkbox" id="c3" class="save-check"></div>
+        <div class="check-row"><span>Lens Microfiber Cloth</span><input type="checkbox" id="c4" class="save-check"></div>
+        <div class="check-row"><span>Power Bank & Cables</span><input type="checkbox" id="c5" class="save-check"></div>
+    </div>
+</details>
+
+<div class="section-label">📦 Deployment Logistics</div>
+<details class="category-trigger">
+    <summary>Pre-Trip Packing</summary>
+    <div class="category-content">
+        <div class="check-row"><span>Primary Marker / Backup</span><input type="checkbox" id="pt1" class="save-check"></div>
+        <div class="check-row"><span>Batteries (AA, AAA, CR123A)</span><input type="checkbox" id="pt2" class="save-check"></div>
+        <div class="check-row"><span>Comms Gear (Headset/PTT/Radio)</span><input type="checkbox" id="pt3" class="save-check"></div>
+        <div class="check-row"><span>Uniforms (Day & Night Camo)</span><input type="checkbox" id="pt4" class="save-check"></div>
+        <div class="check-row"><span>First Aid Kit / Meds</span><input type="checkbox" id="pt5" class="save-check"></div>
+    </div>
+</details>
+
+<details class="category-trigger">
+    <summary>Camping & Food</summary>
+    <div class="category-content">
+        <div class="check-row"><span>Tent / Sleeping Bag / Pad</span><input type="checkbox" id="cf1" class="save-check"></div>
+        <div class="check-row"><span>Stove & Fuel</span><input type="checkbox" id="cf2" class="save-check"></div>
+        <div class="check-row"><span>Water (Minimum 4L / Day)</span><input type="checkbox" id="cf3" class="save-check"></div>
+        <div class="check-row"><span>Meals (MREs / High Calorie)</span><input type="checkbox" id="cf4" class="save-check"></div>
+        <div class="check-row"><span>Hydration Salts / Electrolytes</span><input type="checkbox" id="cf5" class="save-check"></div>
+    </div>
+</details>
+
+<div class="btn-group">
+    <button class="btn" id="btn_copy" onclick="exportData()">Copy String</button>
+    <button class="btn btn-sync" id="btn_sync" onclick="openModal('sync_modal')">Import Sync</button>
+</div>
+
+<div id="sync_modal" class="modal-overlay">
+    <div class="modal-body">
+        <div class="modal-title">Sync String Import</div>
+        <textarea id="sync_input" rows="4" placeholder="Paste squad sync string here..."></textarea>
+        <div class="modal-btns">
+            <button class="btn" onclick="executeImport()">Execute Import</button>
+            <button class="btn btn-sync" onclick="closeModal('sync_modal')" style="border-color:#555; color:#aaa; margin-top:10px;">Close</button>
+        </div>
+    </div>
+</div>
+
+<div id="medical_modal" class="modal-overlay">
+    <div class="modal-body">
+        <div class="modal-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
+            MED-EVAC ROSTER
+        </div>
+        <div id="med_list">
+            <script>
+                const calls = ["MANCHILD (SL)", "RIBS", "SIXX", "RAZOR", "DANGER", "COLDSMOKE", "FOX (VIS-OPS)", "3CHO (MEDIC)"];
+                calls.forEach((cs, i) => {
+                    document.write(`
+                        <div class="med-member-block">
+                            <div style="font-weight:900; color:var(--accent);">${cs}</div>
+                            <div class="med-label">Emergency Contact</div>
+                            <input type="text" id="med_e${i+1}" class="save" placeholder="Name / Phone">
+                            <div class="med-label">Medical Conditions</div>
+                            <input type="text" id="med_m${i+1}" class="save" placeholder="None / Allergies">
+                        </div>
+                    `);
+                });
+            </script>
+        </div>
+        <div class="modal-btns">
+            <button class="btn btn-sync" onclick="closeModal('medical_modal')" style="border-color:#555; color:#aaa;">Return to OPS</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let textInputs, checkboxes;
+    function refreshNodes() {
+        textInputs = document.querySelectorAll('.save');
+        checkboxes = document.querySelectorAll('.save-check');
+    }
+
+    window.onload = () => {
+        refreshNodes();
+        textInputs.forEach(el => {
+            const val = localStorage.getItem('spectre_' + el.id);
+            if (val) el.value = val;
+            el.addEventListener('input', () => localStorage.setItem('spectre_' + el.id, el.value));
+        });
+        checkboxes.forEach(el => {
+            const val = localStorage.getItem('spectre_' + el.id);
+            if (val === 'true') el.checked = true;
+            el.addEventListener('change', () => localStorage.setItem('spectre_' + el.id, el.checked));
+        });
+    };
+
+    function showFeedback(btnId, originalText, successText) {
+        const btn = document.getElementById(btnId);
+        btn.innerText = successText; btn.classList.add('success');
+        setTimeout(() => { btn.innerText = originalText; btn.classList.remove('success'); }, 1500);
+    }
+
+    async function exportData() {
+        let payload = {};
+        refreshNodes();
+        textInputs.forEach(el => {
+            if (!['wf', 'c', 'pt', 'cf'].some(pref => el.id.startsWith(pref))) {
+                payload[el.id] = el.value;
+            }
+        });
+        const string = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        try { await navigator.clipboard.writeText(string); } 
+        catch (err) { 
+            const el = document.createElement('textarea'); el.value = string; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); 
+        }
+        showFeedback('btn_copy', 'Copy String', 'COPIED!');
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function executeImport() {
+        const input = document.getElementById('sync_input');
+        try {
+            const data = JSON.parse(decodeURIComponent(escape(atob(input.value.trim()))));
+            for (let key in data) {
+                localStorage.setItem('spectre_' + key, data[key]);
+                const el = document.getElementById(key);
+                if (el) el.value = data[key];
+            }
+            showFeedback('btn_sync', 'Import Sync', 'SYNCED!'); closeModal('sync_modal');
+        } catch(e) { alert("Invalid Sync String."); }
+    }
+</script>
+</body>
+</html>

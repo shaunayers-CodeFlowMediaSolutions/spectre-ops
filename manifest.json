@@ -1,0 +1,24 @@
+{
+  "name": "Spectre VIS-OPS Center",
+  "short_name": "Spectre Ops",
+  "description": "Tactical Field Operations and Media Management for Loyal Serpent 8.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0f1113",
+  "theme_color": "#ff9500",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/ios-filled/192/ff9500/security-configuration.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://img.icons8.com/ios-filled/512/ff9500/security-configuration.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}
