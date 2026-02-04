@@ -209,7 +209,7 @@
     <div class="category-content">
         <div id="mission_container"></div>
         <div style="padding: 0 15px 15px 15px;">
-            <button class="btn-add-mission" onclick="window.addMission()">+ ADD NEW OBJECTIVE</button>
+            <button class="btn-add-mission" id="add_mission_btn">+ ADD NEW OBJECTIVE</button>
         </div>
     </div>
 </details>
@@ -232,7 +232,6 @@
     <div class="category-content">
         <div class="roster-header"><span>CALLSIGN</span><span>ROLE(S)</span><span>CH#</span></div>
         <div id="roster">
-            <!-- Static Roster -->
             <div class="roster-row"><b>Manchild</b><input type="text" id="r1" class="save" value="Squad Leader"> <input type="text" id="n1" class="save" value="01"></div>
             <div class="roster-row"><b>Ribs</b><input type="text" id="r2" class="save" value="Rifleman"> <input type="text" id="n2" class="save" value="02"></div>
             <div class="roster-row"><b>SIXX</b><input type="text" id="r3" class="save" value="Sniper"> <input type="text" id="n3" class="save" value="03"></div>
@@ -250,15 +249,15 @@
     <div class="category-content">
         <div id="jtf_roster"></div>
         <div style="padding: 0 15px 15px 15px;">
-            <button class="btn-add-mission" onclick="window.addJTFMember()">+ ADD GUEST ROSTER</button>
+            <button class="btn-add-mission" id="add_jtf_btn">+ ADD GUEST ROSTER</button>
         </div>
     </div>
 </details>
 
 <div class="btn-group">
-    <button class="btn" onclick="window.exportData()">Copy Data</button>
+    <button class="btn" id="export_btn">Copy Data</button>
     <div class="sync-info">
-        <button class="btn btn-sync" id="btn_cloud_sync" onclick="window.syncToCloud(true)">Sync Cloud</button>
+        <button class="btn btn-sync" id="btn_cloud_sync">Sync Cloud</button>
         <span class="sync-timestamp" id="sync_time">Last Sync: Never</span>
     </div>
 </div>
@@ -267,7 +266,7 @@
     <div class="modal-body">
         <div class="modal-title">MED-EVAC INFO</div>
         <div id="med_list"></div>
-        <button class="btn btn-sync" onclick="window.closeModal('medical_modal')" style="margin-top:10px;">Close</button>
+        <button class="btn btn-sync" id="close_med_btn" style="margin-top:10px;">Close</button>
     </div>
 </div>
 
@@ -276,22 +275,24 @@
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+    // --- FIREBASE CONFIG ---
     const firebaseConfig = JSON.parse(__firebase_config);
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'spectre-ops-prd';
 
+    // --- APP STATE ---
     let missions = [];
     let jtfMembers = [];
+    let user = null;
+    let isRemoteUpdate = false;
 
-    // Utility assignments for HTML access
-    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
-    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
-
-    function setSyncUI(state) {
+    // --- UI HELPERS ---
+    const setSyncUI = (state) => {
         const btn = document.getElementById('btn_cloud_sync');
         if (state === 'modified') {
+            btn.classList.remove('synced');
             btn.classList.add('modified');
             btn.innerText = 'SYNC CLOUD*';
         } else if (state === 'synced') {
@@ -300,55 +301,9 @@
             btn.innerText = 'CLOUD SYNCED';
             document.getElementById('sync_time').innerText = `Last Sync: ${new Date().toLocaleTimeString()}`;
         }
-    }
-
-    window.addMission = () => {
-        missions.push({ id: Date.now(), text: '', status: 'play' });
-        renderMissions();
-        saveLocal();
     };
 
-    window.updateMissionText = (id, val) => {
-        const m = missions.find(x => x.id === id);
-        if (m) m.text = val;
-        saveLocal();
-    };
-
-    window.toggleMissionStatus = (id) => {
-        const m = missions.find(x => x.id === id);
-        if (m) {
-            const cycles = { play: 'completed', completed: 'failed', failed: 'play' };
-            m.status = cycles[m.status];
-        }
-        renderMissions();
-        saveLocal();
-    };
-
-    window.deleteMission = (id) => {
-        missions = missions.filter(x => x.id !== id);
-        renderMissions();
-        saveLocal();
-    };
-
-    window.addJTFMember = () => {
-        jtfMembers.push({ id: Date.now(), callsign: '', role: '', ch: '' });
-        renderJTF();
-        saveLocal();
-    };
-
-    window.updateJTF = (id, field, val) => {
-        const member = jtfMembers.find(x => x.id === id);
-        if (member) member[field] = val;
-        saveLocal();
-    };
-
-    window.removeJTF = (id) => {
-        jtfMembers = jtfMembers.filter(x => x.id !== id);
-        renderJTF();
-        saveLocal();
-    };
-
-    function renderMissions() {
+    const renderMissions = () => {
         const container = document.getElementById('mission_container');
         container.innerHTML = '';
         missions.forEach(m => {
@@ -357,64 +312,132 @@
             div.className = 'mission-item';
             div.innerHTML = `
                 <div class="mission-header">
-                    <div class="status-pill ${map[m.status][1]}" onclick="window.toggleMissionStatus(${m.id})">${map[m.status][0]}</div>
-                    <button class="mission-delete" onclick="window.deleteMission(${m.id})">✕</button>
+                    <div class="status-pill ${map[m.status][1]}" data-id="${m.id}" data-action="toggle">${map[m.status][0]}</div>
+                    <button class="mission-delete" data-id="${m.id}" data-action="delete">✕</button>
                 </div>
-                <textarea oninput="window.updateMissionText(${m.id}, this.value)" placeholder="Objective details..." rows="2">${m.text}</textarea>
+                <textarea data-id="${m.id}" placeholder="Objective details..." rows="2">${m.text}</textarea>
             `;
+            
+            div.querySelector('textarea').addEventListener('input', (e) => {
+                const target = missions.find(x => x.id == e.target.dataset.id);
+                if (target) target.text = e.target.value;
+                saveLocal();
+            });
+            
+            div.querySelector('.status-pill').addEventListener('click', (e) => {
+                const target = missions.find(x => x.id == e.target.dataset.id);
+                if (target) {
+                    const cycles = { play: 'completed', completed: 'failed', failed: 'play' };
+                    target.status = cycles[target.status];
+                }
+                renderMissions();
+                saveLocal();
+            });
+
+            div.querySelector('.mission-delete').addEventListener('click', (e) => {
+                missions = missions.filter(x => x.id != e.target.dataset.id);
+                renderMissions();
+                saveLocal();
+            });
+
             container.appendChild(div);
         });
-    }
+    };
 
-    function renderJTF() {
+    const renderJTF = () => {
         const container = document.getElementById('jtf_roster');
         container.innerHTML = '';
         jtfMembers.forEach(m => {
             const row = document.createElement('div');
             row.className = 'roster-row jtf';
             row.innerHTML = `
-                <input type="text" class="jtf-callsign-input" value="${m.callsign}" placeholder="CALLSIGN" oninput="window.updateJTF(${m.id}, 'callsign', this.value)">
-                <input type="text" class="jtf-role-input" value="${m.role}" placeholder="Role/Unit" oninput="window.updateJTF(${m.id}, 'role', this.value)">
-                <input type="text" class="jtf-ch-input" value="${m.ch}" placeholder="00" oninput="window.updateJTF(${m.id}, 'ch', this.value)">
-                <button onclick="window.removeJTF(${m.id})" style="color:var(--medical); border:none; background:none;">✕</button>
+                <input type="text" class="jtf-callsign-input" value="${m.callsign}" placeholder="CALLSIGN" data-id="${m.id}" data-field="callsign">
+                <input type="text" class="jtf-role-input" value="${m.role}" placeholder="Role/Unit" data-id="${m.id}" data-field="role">
+                <input type="text" class="jtf-ch-input" value="${m.ch}" placeholder="00" data-id="${m.id}" data-field="ch">
+                <button data-id="${m.id}" class="jtf-del" style="color:var(--medical); border:none; background:none; cursor:pointer;">✕</button>
             `;
+            
+            row.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const member = jtfMembers.find(x => x.id == e.target.dataset.id);
+                    if (member) member[e.target.dataset.field] = e.target.value;
+                    saveLocal();
+                });
+            });
+
+            row.querySelector('.jtf-del').addEventListener('click', (e) => {
+                jtfMembers = jtfMembers.filter(x => x.id != e.target.dataset.id);
+                renderJTF();
+                saveLocal();
+            });
+
             container.appendChild(row);
         });
-    }
+    };
 
-    function saveLocal() {
+    // --- DATA ACTIONS ---
+    const saveLocal = () => {
+        if (isRemoteUpdate) return;
         localStorage.setItem('spectre_missions', JSON.stringify(missions));
         localStorage.setItem('spectre_jtf', JSON.stringify(jtfMembers));
         setSyncUI('modified');
-        window.syncToCloud();
-    }
-
-    window.syncToCloud = async () => {
-        if (!auth.currentUser) return;
-        try {
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'v1', 'state'), {
-                missions,
-                jtf: jtfMembers,
-                ts: Date.now()
-            }, { merge: true });
-            setSyncUI('synced');
-        } catch (e) { console.error(e); }
+        syncToCloud();
     };
 
+    const syncToCloud = async (manual = false) => {
+        if (!user) return;
+        try {
+            const data = {
+                missions,
+                jtf: jtfMembers,
+                ts: Date.now(),
+                sender: user.uid
+            };
+            // Mandatory Rule 1 Path
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'v1', 'state'), data, { merge: true });
+            setSyncUI('synced');
+        } catch (e) { console.error("Sync Error:", e); }
+    };
+
+    // --- GLOBAL ATTACHMENTS (Ensures button clicks work in live) ---
+    window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+    window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+    // --- INITIALIZATION ---
     async function init() {
+        // 1. Auth First (Rule 3)
         try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
+                user = (await signInWithCustomToken(auth, __initial_auth_token)).user;
             } else {
-                await signInAnonymously(auth);
+                user = (await signInAnonymously(auth)).user;
             }
             document.getElementById('cloud_status').innerText = 'Cloud: Online';
             document.getElementById('cloud_status').classList.add('cloud-online');
+
+            // 2. Real-time Cloud Sync
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'v1', 'state'), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.sender !== user.uid) {
+                        isRemoteUpdate = true;
+                        missions = data.missions || [];
+                        jtfMembers = data.jtf || [];
+                        renderMissions();
+                        renderJTF();
+                        localStorage.setItem('spectre_missions', JSON.stringify(missions));
+                        localStorage.setItem('spectre_jtf', JSON.stringify(jtfMembers));
+                        setSyncUI('synced');
+                        isRemoteUpdate = false;
+                    }
+                }
+            }, (err) => console.error("Snapshot Error:", err));
         } catch (e) {
             document.getElementById('cloud_status').innerText = 'Cloud: Offline';
             document.getElementById('cloud_status').classList.add('cloud-offline');
         }
 
+        // 3. Load Local Cache
         const localMissions = localStorage.getItem('spectre_missions');
         if (localMissions) missions = JSON.parse(localMissions);
         const localJTF = localStorage.getItem('spectre_jtf');
@@ -423,13 +446,44 @@
         renderMissions();
         renderJTF();
 
+        // 4. Attach Main Button Listeners (Avoids inline onclick issues)
+        document.getElementById('add_mission_btn').addEventListener('click', () => {
+            missions.push({ id: Date.now(), text: '', status: 'play' });
+            renderMissions();
+            saveLocal();
+        });
+
+        document.getElementById('add_jtf_btn').addEventListener('click', () => {
+            jtfMembers.push({ id: Date.now(), callsign: '', role: '', ch: '' });
+            renderJTF();
+            saveLocal();
+        });
+
+        document.getElementById('btn_cloud_sync').addEventListener('click', () => syncToCloud(true));
+        
+        document.getElementById('export_btn').addEventListener('click', () => {
+            const data = { missions, jtf: jtfMembers, roster: {} };
+            document.querySelectorAll('.save').forEach(el => data.roster[el.id] = el.value);
+            const text = JSON.stringify(data);
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            alert("TACTICAL DATA COPIED TO CLIPBOARD");
+        });
+
+        document.getElementById('close_med_btn').addEventListener('click', () => window.closeModal('medical_modal'));
+
+        // 5. Handle Static Roster Fields
         document.querySelectorAll('.save').forEach(el => {
             const saved = localStorage.getItem('spectre_' + el.id);
             if (saved) el.value = saved;
             el.addEventListener('input', () => {
                 localStorage.setItem('spectre_' + el.id, el.value);
                 setSyncUI('modified');
-                window.syncToCloud();
+                syncToCloud();
             });
         });
     }
